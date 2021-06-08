@@ -12777,6 +12777,12 @@ var $episodesArea = $("#episodesArea");
 var $searchForm = $("#searchForm");
 var TV_MAZE_API = 'http://api.tvmaze.com';
 var DEFAULT_IMG = "https://tinyurl.com/tv-missing";
+// interface SubmitEvent extends Event {
+//   submitter: HTMLElement; 
+// }
+// interface HTMLFormElement {
+//   onsubmit: (this: GlobalEventHandlers, ev: SubmitEvent) => any | null;
+// }
 /** Given a search term, search for tv shows that match that query.
  *
  *  Returns (promise) array of show objects: [show, show, ...].
@@ -12785,16 +12791,17 @@ var DEFAULT_IMG = "https://tinyurl.com/tv-missing";
  */
 function getShowsByTerm(term) {
     return __awaiter(this, void 0, void 0, function () {
-        var res, shows, showsInfo;
+        var res, showsInfo;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, axios_1.default.get(TV_MAZE_API + "/search/shows?q=" + term)];
                 case 1:
                     res = _a.sent();
-                    shows = res.data;
-                    showsInfo = shows.map(function (show) {
-                        var _a = show.show, id = _a.id, name = _a.name, summary = _a.summary;
-                        var image = show.show.image && show.show.image.medium || DEFAULT_IMG;
+                    showsInfo = res.data.map(function (result) {
+                        var _a;
+                        var show = result.show;
+                        var id = show.id, name = show.name, summary = show.summary;
+                        var image = ((_a = show.image) === null || _a === void 0 ? void 0 : _a.medium) || DEFAULT_IMG;
                         return { id: id, name: name, summary: summary, image: image };
                     });
                     return [2 /*return*/, showsInfo];
@@ -12850,9 +12857,55 @@ $searchForm.on("submit", function (evt) {
 /** Given a show ID, get from API and return (promise) array of episodes:
  *      { id, name, season, number }
  */
-// async function getEpisodesOfShow(id) { }
-/** Write a clear docstring for this function... */
-// function populateEpisodes(episodes) { }
+function getEpisodesOfShow(id) {
+    return __awaiter(this, void 0, void 0, function () {
+        var res, episodes, episodesInfo;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, axios_1.default.get(TV_MAZE_API + "/shows/" + id + "/episodes")];
+                case 1:
+                    res = _a.sent();
+                    episodes = res.data;
+                    episodesInfo = episodes.map(function (episode) {
+                        var id = episode.id, name = episode.name, season = episode.season, number = episode.number;
+                        return { id: id, name: name, season: season, number: number };
+                    });
+                    return [2 /*return*/, episodesInfo];
+            }
+        });
+    });
+}
+/** Given an array of episodesInfo, populates that into the episodeList
+ * in the DOM.
+ */
+function populateEpisodes(episodesInfo) {
+    $("#episodesList").empty();
+    for (var _i = 0, episodesInfo_1 = episodesInfo; _i < episodesInfo_1.length; _i++) {
+        var episode = episodesInfo_1[_i];
+        var $episode = $("<li> " + episode.name + " (season " + episode.season + ", number " + episode.number + ")</li>");
+        $("#episodesList").append($episode);
+    }
+    $episodesArea.show();
+}
+/** gets list of episodes for the selected show and updates the DOM */
+function buttonHandler(evt) {
+    return __awaiter(this, void 0, void 0, function () {
+        var id, listOfEpisodes;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    console.log("buttonHandler triggered");
+                    id = $(evt.target).closest(".Show").data("show-id");
+                    return [4 /*yield*/, getEpisodesOfShow(id)];
+                case 1:
+                    listOfEpisodes = _a.sent();
+                    populateEpisodes(listOfEpisodes);
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+$showsList.on("click", ".Show-getEpisodes", buttonHandler);
 
 
 /***/ })
